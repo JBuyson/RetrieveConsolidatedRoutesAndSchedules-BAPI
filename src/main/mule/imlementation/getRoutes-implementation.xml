@@ -19,21 +19,21 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 					<ee:message>
 						<ee:set-payload><![CDATA[%dw 2.0
 output application/json
+var LocationMapping = readUrl("classpath://json/LocationCodeMapping","application/json")
 ---
 payload map(value,index) ->{
     "companyCode": vars.transportCompany,
     "originLocation": {
-      "locationCode": value.departureLocationCode,
-      "locationDesc": "Beauna Vista Singapore"
+      "locationCode": value.originLocation.locationCode,
+      "locationDesc": (LocationMapping filter($.locationCode == value.originLocation.locationCode))[0].locationDesc
     },
     "destinationLocation": {
-      "locationCode": value.arrivalLocationCode,
-      "locationDesc": "Klang Malaysia"
+      "locationCode": value.destinationLocation.locationCode,
+      "locationDesc": (LocationMapping filter($.locationCode == value.destinationLocation.locationCode))[0].locationDesc
     }
 }]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
-					<logger level="INFO" doc:name="Logger" doc:id="43976b7f-aaee-4898-b9d1-39decbcb8bb0" message='message: "hello world"' />
 				</ee:cache>
 	</sub-flow>
 	<sub-flow name="getRoutes-CallFastGo-subFlow" doc:id="20f92577-61d2-491b-916f-f290e87403df" >
@@ -50,24 +50,25 @@ payload map(value,index) ->{
 					<ee:message>
 						<ee:set-payload><![CDATA[%dw 2.0
 output application/json
+var LocationMapping = readUrl("classpath://json/LocationCodeMapping","application/json")
 ---
 payload map(value,index) ->{
     "companyCode": vars.transportCompany,
     "originLocation": {
       "locationCode": value.departureLocationCode,
-      "locationDesc": "Beauna Vista Singapore"
+      "locationDesc": (LocationMapping filter($.locationCode == value.departureLocationCode))[0].locationDesc    
     },
     "destinationLocation": {
       "locationCode": value.arrivalLocationCode,
-      "locationDesc": "Klang Malaysia"
+      "locationDesc": (LocationMapping filter($.locationCode == value.arrivalLocationCode))[0].locationDesc   
     }
 }]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
-					<logger level="INFO" doc:name="Logger" doc:id="765aa900-fa93-416b-a3a7-e9f809ec7599" message='message: "hello world"' />
 				</ee:cache>
 	</sub-flow>
 	<sub-flow name="getRoutes-implementationSub_Flow" doc:id="4a9f46af-c89a-4d6c-a7fb-9f7ee7aa9ba4" >
+		<set-variable value="Routes" doc:name="Set Variable" doc:id="025e87ae-ac6d-4b41-94e1-c751ddc56221" variableName="resource"/>
 		<choice doc:name="Choice" doc:id="e131d4eb-b375-4b47-8340-9233ca9d2d1a" >
 			<when expression="#[vars.transportCompany == 'fastGo']">
 				<flow-ref doc:name="Flow Reference" doc:id="8fc8fe7e-6fcd-47fa-b864-914e696c95ad" name="getRoutes-CallFastGo-subFlow" />
@@ -86,7 +87,6 @@ payload map(value,index) ->{
 						<flow-ref doc:name="Flow Reference" doc:id="6178f13a-0f6f-4669-a19c-c06c2c835b51" name="getRoutes-CallTravelOnTip-subFlow"/>
 					</route>
 				</scatter-gather>
-				<logger level="INFO" doc:name="Logger" doc:id="5aae548f-2009-4b73-94e7-5abe88feeb95" message="#[(payload.'0'.payload default []) ++ (payload.'1'.payload default [])]"/>
 				<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;(payload.'0'.payload default []) ++ (payload.'1'.payload default [])]" doc:name="Set Payload" doc:id="00333cac-73b9-4389-a2ef-3f544758cb90" />
 			</otherwise>
 		</choice>
